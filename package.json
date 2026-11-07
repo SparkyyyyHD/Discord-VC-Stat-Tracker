@@ -1,0 +1,13 @@
+{
+  "dependencies": {
+    "@inquirer/prompts": "^8.7.5",
+    "dotenv": "^18.0.9",
+    "got": "^16.2.0",
+    "playwright": "^1.65.0",
+    "sharp": "^0.35.5",
+    "terminal-image": "^5.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6"
+  }
+}
