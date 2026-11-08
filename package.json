@@ -10,7 +10,7 @@
   "devDependencies": {
     "@types/node": "^26.6.6"
   },
-  "name": "discord-scraper",
+  "name": "discord-vc-stats",
   "version": "1.0.0",
   "description": "Discord VC Statistics Tracker",
   "main": "scrape.ts",
