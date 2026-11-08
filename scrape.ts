@@ -61,6 +61,7 @@ function getISOWeekNumber(date : Date) : string {
         async (name, index) => {
             if(img_srcs[index]![0] =='/'){
                 console.error("URL cannot start with a slash: " + img_srcs[index]!);
+                img_srcs.splice(index,1);
             }
             const buffer = await got(img_srcs[index]!).buffer();
             const png = await sharp(buffer).png().toBuffer();
