@@ -96,14 +96,26 @@ function getISOWeekNumber(date : Date) : string {
     let calls = new Map<string, Call>();
     while (daysAgo < time){
         
-        const curCallElem = await page.getByText(/started a call that lasted /).and(page.locator(':not(div[id^="message-content"] > *)')).all();
-        const begin = await page.getByText(/the beginning of/).and(page.locator(':not(div[id^="message-content"] *)'));
+        const curCallElem = await page.getByText(/started a call that lasted /)
+            .and(page.locator(':not(div[id^="message-content"] > *)'))
+            .and(page.locator(':not([id^="message-accessories"] *)'))
+            .allInnerTexts();
+        const begin = page.getByText(/the beginning of/)
+            .and(page.locator(':not(div[id^="message-content"] *)'))
+            .and(page.locator(':not([id^="message-accessories"] *)'));
         if (await begin.isVisible()){
+            //console.log(await begin.innerText());
             break;
         }
-        const processedCurCalls = await Promise.all(curCallElem.map(async (loc)=>{
-            const call = await loc.innerText();
-            const lines = call.split("\n").map(line => line.trim());
+        const processedCurCalls = curCallElem.map((call)=>{
+            call = call
+                .replace(/\s+(?=started a call that lasted )/, '\n')
+                .replace(/\s*—\s*/, '\n—\n')
+                .replace(/(\d{1,2}:\d{2}\s*[AP]M)\s*/, '$1\n');
+            const lines = call.split("\n").map(line => line.trim()).filter(Boolean);
+            if(lines[1] === undefined){
+                console.error("Extracted text does not match expected format: " + call);
+            }
             const callTimeStr = lines[1].replace("started a call that lasted ", "");
             const [valStr, unit] = callTimeStr.split(" ");
             
@@ -143,7 +155,7 @@ function getISOWeekNumber(date : Date) : string {
                 date: isoDate,
                 daysAgo: Math.floor(Math.abs(today.getTime() - isoDate.getTime()) / (1000 * 60 * 60 * 24))
             }
-        }));
+        });
         processedCurCalls.forEach(item => {
             const key = `${item.username}-${item.date.getTime()}-${item.calltime}`;
             if (item.daysAgo < time){
@@ -153,7 +165,7 @@ function getISOWeekNumber(date : Date) : string {
         });
         const scroller = page.locator(".scroller_8AE1Qq");
         await scroller.hover();
-        await page.mouse.wheel(0, -100);
+        await page.mouse.wheel(0, -400);
     }
     let uniqueCalls = [...calls.values()];
     uniqueCalls.sort((a: Call, b : Call)=>b.date.getTime()-a.date.getTime());
@@ -201,14 +213,14 @@ function getISOWeekNumber(date : Date) : string {
         output_lines.push(styleText("yellow","Total call time in last 7d: ") + formatTime(weekCallMins));
     }
     output_lines.push(styleText("yellow","Total call time in last 24h: ") + formatTime(dayCall));
-    output_lines.push(styleText("yellow","Most call time in a day: ") + (calltimePerDay.size > 0 
+    output_lines.push(styleText("yellow","Most call time in a day: ") + formatTime((calltimePerDay.size > 0 
         ? Math.max(...calltimePerDay.values())
-        : "0"));
+        : 0)));
 
     if (time>=7){
-        output_lines.push(styleText("yellow","Most call time in a week: ") + (calltimePerWeek.size > 0 
+        output_lines.push(styleText("yellow","Most call time in a week: ") + formatTime((calltimePerWeek.size > 0 
         ? Math.max(...calltimePerWeek.values())
-        : "0"));
+        : 0)));
     }
     output_lines.push(styleText("yellow","Most calls started by: ") + (callsStartedBy.size > 0 
         ? [...callsStartedBy.entries()].reduce((max, entry) => entry[1] > max[1] ? entry : max)[0]
