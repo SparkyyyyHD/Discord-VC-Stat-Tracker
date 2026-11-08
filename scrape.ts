@@ -4,7 +4,7 @@ import { number, select } from '@inquirer/prompts';
 import got from 'got';
 import * as dotenv from 'dotenv';
 import sharp from 'sharp';
-dotenv.config();
+dotenv.config({ quiet: true });
 import { styleText } from 'node:util';
 
 type Call = {
@@ -32,7 +32,7 @@ function getISOWeekNumber(date : Date) : string {
     const page = await browser.newPage();
     page.goto("https://discord.com/app")
     console.log("Please Login to Your Discord Account");
-    if (process.env.LOGIN_EMAIL!.trim() != "" && process.env.LOGIN_PASSWORD!.trim() != ""){
+    if (process.env.LOGIN_EMAIL?.trim() && process.env.LOGIN_PASSWORD?.trim()){
         await page.getByRole('textbox', { name: 'Email or Phone Number' }).fill(process.env.LOGIN_EMAIL!);
         await page.getByRole('textbox', { name: 'Password' }).click();
         await page.getByRole('textbox', { name: 'Password' }).fill(process.env.LOGIN_PASSWORD!.trim());
