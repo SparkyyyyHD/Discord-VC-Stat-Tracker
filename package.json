@@ -12,7 +12,7 @@
     "@types/node": "^26.6.6"
   },
   "name": "discord-vc-stats",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "Discord VC Statistics Tracker",
   "main": "scrape.ts",
   "bin": {
