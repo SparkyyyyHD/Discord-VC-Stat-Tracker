@@ -13,6 +13,19 @@ type Call = {
     daysAgo: number
 };
 
+function formatTime(minutes : number) : string {
+    return `${Math.floor(minutes/1440)}d, ${Math.floor((minutes%1440)/60)}h, ${minutes%60}m`;
+}
+
+function getISOWeekNumber(date : Date) : string {
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  const weekNo = Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
+  return String(weekNo);
+}
+
+
 (async () => {
     const browser = await chromium.launch({ headless: false });
     const page = await browser.newPage();
@@ -30,8 +43,18 @@ type Call = {
     const dms = await page.getByRole('link', { name: /message/ }).all();
     const names = await Promise.all(dms.map(async (dm) => (await dm.innerText()).split('\n')[0]));
     //console.log(names);
-    const img_srcs = await Promise.all((await page.locator('.wrapper_XpIUHy img').all()).slice(0, names.length).map((img) => img.getAttribute("src")));
+    const img_srcs = await Promise.all((await page.locator('.wrapper_XpIUHy img:not(.avatarDecoration_XpIUHy)').all()).slice(0, names.length).map((img) => img.getAttribute("src")));
     //console.log(img_src);
+    for (const [index, dm] of dms.entries()) {
+        const hasImage = await dm.locator('.wrapper_XpIUHy img').count() > 0;
+        if (!hasImage) {
+            img_srcs.splice(
+                index,
+                0,
+                "https://upload.wikimedia.org/wikipedia/commons/c/cd/Portrait_Placeholder_Square.png"
+            );
+        }
+    }
 
     const choices = await Promise.all(names.map(
         async (name, index) => {
@@ -74,7 +97,7 @@ type Call = {
     while (daysAgo < time){
         
         const curCallElem = await page.getByText(/started a call that lasted /).and(page.locator(':not(div[id^="message-content"] > *)')).all();
-        const begin = await page.getByText(/the beginning of/).and(page.locator(':not(div[id^="message-content"] > *)'));
+        const begin = await page.getByText(/the beginning of/).and(page.locator(':not(div[id^="message-content"] *)'));
         if (await begin.isVisible()){
             break;
         }
@@ -87,7 +110,11 @@ type Call = {
             const dateStr = lines[4];
             const dateStrLines = dateStr.split(' ').map((str)=> str.replaceAll(',', ''));
             const monthDict : Record<string, number> = {'January': 0, 'February': 1, 'March': 2, 'April': 3, 'May': 4, 'June': 5, July: 6, 'August': 7, 'September': 8, 'October': 9, 'November': 10, 'December': 11};
-            const isoDate = new Date(parseInt(dateStrLines[3]), monthDict[dateStrLines[1]], parseInt(dateStrLines[2]));
+            const timeStr = dateStrLines[5];
+            const [hStr, mStr] = timeStr.split(":");
+            const period = dateStrLines[6];
+            const hours = (parseInt(hStr) % 12) + (period == "PM" ? 12 : 0);
+            const isoDate = new Date(parseInt(dateStrLines[3]), monthDict[dateStrLines[1]], parseInt(dateStrLines[2]), hours, parseInt(mStr));
 
             let callTime;
             
@@ -127,9 +154,60 @@ type Call = {
         const scroller = page.locator(".scroller_8AE1Qq");
         await scroller.hover();
         await page.mouse.wheel(0, -200);
-        await page.getByRole("article").first().waitFor({state: "visible"});
     }
     let uniqueCalls = [...calls.values()];
     uniqueCalls.sort((a: Call, b : Call)=>b.date.getTime()-a.date.getTime());
-    console.log(uniqueCalls);
+    //console.log(uniqueCalls);
+    let sum = 0, dayCall = 0, weekCallMins = 0, monthCallMins = 0, sixMonthCallMins = 0, yearCallMins = 0; // Accumulated Call Time Stats
+    const calltimePerDay : Map<string, number> = new Map(), calltimePerWeek : Map<string, number> = new Map(); // Most call time stats
+    const callsStartedBy : Map<string, number> = new Map();
+    uniqueCalls.forEach((item)=>{
+        callsStartedBy.set(item.username, (callsStartedBy.get(item.username) ?? 0) + 1);
+        const dayKey = String(item.date.getFullYear())+String(item.date.getMonth())+String(item.date.getDate());
+        const weekKey = String(item.date.getUTCFullYear())+getISOWeekNumber(item.date);
+        calltimePerDay.set(dayKey, (calltimePerDay.get(dayKey) ?? 0) + item.calltime);
+        calltimePerWeek.set(weekKey, (calltimePerWeek.get(weekKey) ?? 0) + item.calltime);
+
+        if (item.daysAgo < 1){  
+            dayCall += item.calltime;
+        }
+        if (item.daysAgo < 7){
+            weekCallMins += item.calltime;
+        }
+        if (item.daysAgo < 30){
+            monthCallMins += item.calltime;
+        }
+        if (item.daysAgo < 180){
+            sixMonthCallMins += item.calltime;
+        }
+        if (item.daysAgo < 365){
+            yearCallMins += item.calltime;
+        }
+        sum += item.calltime;
+    });
+    if (time >= 7){
+        if (time >= 30){
+            if (time >= 180){
+                if (time == 10000){
+                    console.log("Total accumulated call time: " + formatTime(sum));
+                }
+                console.log("Total call time in last 180d: " + formatTime(sixMonthCallMins));
+            }
+            console.log("Total call time in last 30d: " + formatTime(monthCallMins));
+        }
+        console.log("Total call time in last 7d: " + formatTime(weekCallMins));
+    }
+    console.log("Total call time in last 24h: " + formatTime(dayCall));
+    console.log("Most call time in a day: " + (calltimePerDay.size > 0 
+        ? Math.max(...calltimePerDay.values())
+        : "0"));
+
+    if (time>=7){
+        console.log("Most call time in a week: " + + (calltimePerWeek.size > 0 
+        ? Math.max(...calltimePerWeek.values())
+        : "0"));
+    }
+    console.log("Most calls started by: " + (callsStartedBy.size > 0 
+        ? [...callsStartedBy.entries()].reduce((max, entry) => entry[1] > max[1] ? entry : max)[0]
+        : "N/A"));
 })();
