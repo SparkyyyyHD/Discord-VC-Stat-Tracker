@@ -206,6 +206,9 @@ function getISOWeekNumber(date : Date) : string {
                 if (time == 10000){
                     output_lines.push(styleText("yellow","Total accumulated call time: ") + formatTime(sum));
                 }
+                if (time >= 365){
+                    output_lines.push(styleText("yellow","Total call time in last 365d: ") + formatTime(yearCallMins));
+                }
                 output_lines.push(styleText("yellow","Total call time in last 180d: ") + formatTime(sixMonthCallMins));
             }
             output_lines.push(styleText("yellow","Total call time in last 30d: ") + formatTime(monthCallMins));
