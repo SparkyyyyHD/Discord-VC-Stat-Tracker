@@ -12,14 +12,16 @@
     "@types/node": "^26.6.6"
   },
   "name": "discord-vc-stats",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Discord VC Statistics Tracker",
   "main": "scrape.ts",
   "bin": {
     "discord-vc-stats": "bin/discord-vc-stats.cjs"
   },
-  "files": ["bin/", "scrape.ts"],
-
+  "files": [
+    "bin/",
+    "scrape.ts"
+  ],
   "keywords": [],
   "author": "",
   "license": "ISC",
