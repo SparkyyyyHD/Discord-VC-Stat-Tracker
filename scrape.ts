@@ -40,7 +40,7 @@ function getISOWeekNumber(date : Date) : string {
     }
     await page.waitForURL("https://discord.com/channels/@me");
     console.log("Logged In!");
-    page.setDefaultTimeout(120000); 
+    page.setDefaultTimeout(30000); 
     const dms = await page.getByRole('link', { name: /message/ }).all();
     const names = await Promise.all(dms.map(async (dm) => (await dm.innerText()).split('\n')[0]));
     //console.log(names);
@@ -153,7 +153,7 @@ function getISOWeekNumber(date : Date) : string {
         });
         const scroller = page.locator(".scroller_8AE1Qq");
         await scroller.hover();
-        await page.mouse.wheel(0, -200);
+        await page.mouse.wheel(0, -100);
     }
     let uniqueCalls = [...calls.values()];
     uniqueCalls.sort((a: Call, b : Call)=>b.date.getTime()-a.date.getTime());
@@ -221,4 +221,5 @@ function getISOWeekNumber(date : Date) : string {
     for (const [index, pfp_line] of pfp_lines.entries()){
         console.log(pfp_line + "     " + output_lines[index]);
     }
+    await browser.close();
 })();
