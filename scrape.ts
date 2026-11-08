@@ -45,7 +45,7 @@ function getISOWeekNumber(date : Date) : string {
     const names = await Promise.all(dms.map(async (dm) => (await dm.innerText()).split('\n')[0]));
     //console.log(names);
     const img_srcs = await Promise.all((await page.locator('.wrapper_XpIUHy img:not(.avatarDecoration_XpIUHy)').all()).slice(0, names.length).map((img) => img.getAttribute("src")));
-    //console.log(img_src);
+    //console.log(img_srcs);
     for (const [index, dm] of dms.entries()) {
         const hasImage = await dm.locator('.wrapper_XpIUHy img').count() > 0;
         if (!hasImage) {
@@ -59,6 +59,9 @@ function getISOWeekNumber(date : Date) : string {
 
     const choices = await Promise.all(names.map(
         async (name, index) => {
+            if(img_srcs[index]![0] =='/'){
+                console.error("URL cannot start with a slash: " + img_srcs[index]!);
+            }
             const buffer = await got(img_srcs[index]!).buffer();
             const png = await sharp(buffer).png().toBuffer();
             return ({
