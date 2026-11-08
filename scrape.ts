@@ -1,10 +1,11 @@
-import { chromium } from 'playwright';
+import { chromium, Locator } from 'playwright';
 import  terminalImage from 'terminal-image';
-import { select } from '@inquirer/prompts';
+import { number, select } from '@inquirer/prompts';
 import got from 'got';
 import * as dotenv from 'dotenv';
 import sharp from 'sharp';
 dotenv.config();
+import { styleText } from 'node:util';
 
 type Call = {
     username : string,
@@ -62,7 +63,7 @@ function getISOWeekNumber(date : Date) : string {
             const png = await sharp(buffer).png().toBuffer();
             return ({
                 name: name, 
-                value: dms[index], 
+                value: [dms[index], index] as const, 
                 description: await terminalImage.buffer(png, {
                     width: 20,
                     preferNativeRender: false,
@@ -70,8 +71,7 @@ function getISOWeekNumber(date : Date) : string {
             });
         }
     ));
-
-    const dm = await select({
+    const [dm, idx] = await select({
     message: "Which DM do you want to analyze?",
     choices: choices
     });
@@ -185,29 +185,40 @@ function getISOWeekNumber(date : Date) : string {
         }
         sum += item.calltime;
     });
+    
+    console.log(styleText('green', `Your VC Stats with ${names[idx]}`))
+    let output_lines : String[] = [];
     if (time >= 7){
         if (time >= 30){
             if (time >= 180){
                 if (time == 10000){
-                    console.log("Total accumulated call time: " + formatTime(sum));
+                    output_lines.push(styleText("yellow","Total accumulated call time: ") + formatTime(sum));
                 }
-                console.log("Total call time in last 180d: " + formatTime(sixMonthCallMins));
+                output_lines.push(styleText("yellow","Total call time in last 180d: ") + formatTime(sixMonthCallMins));
             }
-            console.log("Total call time in last 30d: " + formatTime(monthCallMins));
+            output_lines.push(styleText("yellow","Total call time in last 30d: ") + formatTime(monthCallMins));
         }
-        console.log("Total call time in last 7d: " + formatTime(weekCallMins));
+        output_lines.push(styleText("yellow","Total call time in last 7d: ") + formatTime(weekCallMins));
     }
-    console.log("Total call time in last 24h: " + formatTime(dayCall));
-    console.log("Most call time in a day: " + (calltimePerDay.size > 0 
+    output_lines.push(styleText("yellow","Total call time in last 24h: ") + formatTime(dayCall));
+    output_lines.push(styleText("yellow","Most call time in a day: ") + (calltimePerDay.size > 0 
         ? Math.max(...calltimePerDay.values())
         : "0"));
 
     if (time>=7){
-        console.log("Most call time in a week: " + + (calltimePerWeek.size > 0 
+        output_lines.push(styleText("yellow","Most call time in a week: ") + (calltimePerWeek.size > 0 
         ? Math.max(...calltimePerWeek.values())
         : "0"));
     }
-    console.log("Most calls started by: " + (callsStartedBy.size > 0 
+    output_lines.push(styleText("yellow","Most calls started by: ") + (callsStartedBy.size > 0 
         ? [...callsStartedBy.entries()].reduce((max, entry) => entry[1] > max[1] ? entry : max)[0]
         : "N/A"));
+
+    const buffer = await got(img_srcs[idx]!).buffer();
+    const png = await sharp(buffer).png().toBuffer();
+    const pfp = await terminalImage.buffer(png, {height: output_lines.length, preferNativeRender: false});
+    const pfp_lines = pfp.split("\n");
+    for (const [index, pfp_line] of pfp_lines.entries()){
+        console.log(pfp_line + "     " + output_lines[index]);
+    }
 })();
