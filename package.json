@@ -9,5 +9,16 @@
   },
   "devDependencies": {
     "@types/node": "^26.6.6"
-  }
+  },
+  "name": "discord-scraper",
+  "version": "1.0.0",
+  "description": "Discord VC Statistics Tracker",
+  "main": "scrape.ts",
+  "scripts": {
+    "start": "tsx scrape.ts"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs"
 }
