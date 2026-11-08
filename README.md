@@ -2,10 +2,14 @@
 
 ## Installation 
 
-Install playwright with
-```npx playwright install```
+Install the package and browser:
+```sh
+npm install discord-vc-stats
+npx playwright install chromium
+```
 
 ## Usage
 
-Run the script with
-```npx tsx scrape.ts```
+```sh
+npx discord-vc-stats
+```
